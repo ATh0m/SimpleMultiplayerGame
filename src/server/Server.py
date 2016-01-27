@@ -3,6 +3,8 @@ import queue
 import socket
 import sys
 import threading
+from . import Client
+from . import WaitingRoom
 
 logging.basicConfig(filename='logs.log',
                     level=logging.DEBUG,
@@ -17,7 +19,9 @@ class Server(threading.Thread):
         self.port = 50000
         self.backlog = 5
         self.size = 1024
+
         self.server = None
+        self.waiting_room = None
 
         self.running = False
 
@@ -43,11 +47,14 @@ class Server(threading.Thread):
 
         logging.info("Server started")
 
+        self.waiting_room = WaitingRoom.WaitingRoom(self.new_clients)
+        self.waiting_room.start()
+
         while self.running:
 
             try:
                 connection = self.server.accept()
-                client = client.Client(connection)
+                client = Client.Client(connection)
 
                 self.clients.append(client)
                 self.new_clients.put(client)
@@ -62,9 +69,15 @@ class Server(threading.Thread):
         self.running = False
 
         for client in self.clients:
-            connection, _ = client
-            connection.close()
+            client.client.close()
+
+        for room in self.waiting_room.rooms:
+            room.running = False
+            room.join()
 
         self.server.close()
+
+        self.waiting_room.running = False
+        self.waiting_room.join()
 
         logging.info("Server stopped")

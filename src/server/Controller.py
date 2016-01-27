@@ -1,5 +1,4 @@
 import sys
-
 from . import Server
 
 
@@ -17,8 +16,10 @@ class Controller:
                 self.start_server()
             elif command.lower() == 'stop':
                 self.stop_server()
-            elif command.lower() == 'close':
+            elif command.lower() == 'exit':
                 self.close()
+            elif command.lower() == 'clients':
+                self.print_clients()
             else:
                 print("Not known command")
 
@@ -39,3 +40,6 @@ class Controller:
     def close(self):
         self.stop_server()
         sys.exit(0)
+
+    def print_clients(self):
+        print(self.server.clients)
