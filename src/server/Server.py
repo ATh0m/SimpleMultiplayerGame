@@ -1,10 +1,8 @@
+import logging
+import queue
 import socket
 import sys
 import threading
-import queue
-import logging
-
-from . import Client
 
 logging.basicConfig(filename='logs.log',
                     level=logging.DEBUG,
@@ -49,7 +47,7 @@ class Server(threading.Thread):
 
             try:
                 connection = self.server.accept()
-                client = Client.Client(connection)
+                client = client.Client(connection)
 
                 self.clients.append(client)
                 self.new_clients.put(client)
