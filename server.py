@@ -1,44 +1,121 @@
 import socket
 import sys
-from _thread import *
- 
-HOST = ''
-PORT = 8888
- 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-print('Socket created')
+import threading
+import queue
+import logging
 
-try:
-    s.bind((HOST, PORT))
-except socket.error as msg:
-    print('Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
-    sys.exit()
-
-print('Socket bind complete')
-
-s.listen(10)
-print('Socket now listening')
+logging.basicConfig(filename='logs.log',
+                    level=logging.DEBUG,
+                    format='%(levelname)s %(asctime)-15s %(message)s')
 
 
-def clientthread(conn):
-    conn.send(b'Welcome to the server. Type something and hit enter\n')
+class Server(threading.Thread):
+    def __init__(self):
+        super().__init__()
 
-    while True:
+        self.host = ''
+        self.port = 50000
+        self.backlog = 5
+        self.size = 1024
+        self.server = None
 
-        data = conn.recv(1024)
-        reply = b'OK...' + data
-        if not data:
-            break
+        self.running = False
 
-        conn.sendall(reply)
+        self.clients = []
 
-    conn.close()
+    def open_socket(self):
+        try:
+            self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.server.bind((self.host, self.port))
+            self.server.listen(5)
+        except socket.error as error:
+            value, message = error
+            if self.server:
+                self.server.close()
+            logging.warning("Could not open socket: " + message)
+            sys.exit(1)
 
-while 1:
-    conn, addr = s.accept()
-    print('Connected with ' + addr[0] + ':' + str(addr[1]))
+    def run(self):
+        self.open_socket()
+        self.running = True
 
-    start_new_thread(clientthread, (conn,))
+        logging.info("Server started")
 
-s.close()
+        while self.running:
+
+            try:
+                connection, address = self.server.accept()
+                self.clients.append((connection, address))
+                logging.info('Connected ' + str(address[0]) + ':' + str(address[1]))
+            except socket.error as error:
+                logging.warning("Connection ERROR " + str(error))
+
+    def stop(self):
+        self.running = False
+
+        for client in self.clients:
+            connection, _ = client
+            connection.close()
+
+        self.server.close()
+
+        logging.info("Server stopped")
+
+
+class Client:
+    def __init__(self):
+        pass
+
+
+class WaitingRoom(threading.Thread):
+    def __init__(self):
+        super().__init__()
+
+
+
+class Room:
+    def __init__(self):
+        pass
+
+
+class Controller:
+    def __init__(self):
+        self.server = None
+
+    def run(self):
+        running = 1
+
+        while running:
+            command = input('$: ')
+
+            if command.lower() == 'start':
+                self.start_server()
+            elif command.lower() == 'stop':
+                self.stop_server()
+            elif command.lower() == 'close':
+                self.close()
+            else:
+                print("Not known command")
+
+    def start_server(self):
+        if self.server is None:
+            self.server = Server()
+            self.server.start()
+            print("Server started")
+
+    def stop_server(self):
+        if self.server is not None:
+            self.server.stop()
+            self.server.join()
+
+            self.server = None
+            print("Server stopped")
+
+    def close(self):
+        self.stop_server()
+        sys.exit(0)
+
+if __name__ == '__main__':
+    c = Controller()
+    c.run()
