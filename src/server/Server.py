@@ -16,7 +16,7 @@ class Server(threading.Thread):
         super().__init__()
 
         self.host = ''
-        self.port = 50000
+        self.port = 1234
         self.backlog = 5
         self.size = 1024
 
@@ -25,6 +25,7 @@ class Server(threading.Thread):
 
         self.running = False
 
+        self.last_client_id = 0
         self.clients = []
         self.new_clients = queue.Queue()
 
@@ -54,7 +55,10 @@ class Server(threading.Thread):
 
             try:
                 connection = self.server.accept()
-                client = Client.Client(connection)
+
+                client = Client.Client(connection, self.last_client_id)
+                self.last_client_id += 1
+                client.start()
 
                 self.clients.append(client)
                 self.new_clients.put(client)
@@ -70,6 +74,8 @@ class Server(threading.Thread):
 
         for client in self.clients:
             client.client.close()
+            client.running = False
+            client.join()
 
         for room in self.waiting_room.rooms:
             room.running = False
@@ -79,5 +85,7 @@ class Server(threading.Thread):
 
         self.waiting_room.running = False
         self.waiting_room.join()
+
+        self.join()
 
         logging.info("Server stopped")

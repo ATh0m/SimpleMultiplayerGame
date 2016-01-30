@@ -7,7 +7,7 @@ class WaitingRoom(threading.Thread):
         super().__init__()
 
         self.running = True
-        self.last_id = 0
+        self.last_room_id = 0
 
         self.new_clients = new_clients
         self.rooms = []
@@ -27,10 +27,11 @@ class WaitingRoom(threading.Thread):
                         target_room = room
 
                 if target_room is None:
-                    target_room = Room.Room(self.last_id)
-                    self.last_id += 1
+                    target_room = Room.Room(self.last_room_id)
+                    self.last_room_id += 1
                     self.rooms.append(target_room)
                     target_room.start()
 
+                # user.client.send(bytes("#{}\n".format(target_room.id), 'utf-8'))
                 target_room.users.append(user)
                 target_room.free_slots -= 1

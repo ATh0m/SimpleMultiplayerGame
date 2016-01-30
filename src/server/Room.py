@@ -17,10 +17,13 @@ class Room(threading.Thread):
     def run(self):
 
         while self.running:
-            for user in self.users:
-                user.client.send(bytes("{}".format(self.id), 'utf-8'))
-            sleep(3)
 
-            # for user in self.users:
-            #     print()
-            #     send data to all users in room
+            for user in self.users:
+                for user_target in self.users:
+                    if user_target is not user:
+                        # if user.data is not None:
+                        try:
+                            user_target.client.send(user.data)
+                        except:
+                            self.running = False
+            sleep(3)
