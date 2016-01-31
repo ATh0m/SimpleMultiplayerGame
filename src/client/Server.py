@@ -1,6 +1,5 @@
 import threading
 import socket
-import simplejson
 import pickle
 from time import sleep
 from . import Game
@@ -21,7 +20,7 @@ class Server:
         self.sending_data = SendData(self.server, self.player)
         self.sending_data.start()
 
-        self.receiving_data = ReceiveData(self.server, self.enemy, self.ball)
+        self.receiving_data = ReceiveData(self.server, self.player, self.enemy, self.ball)
         self.receiving_data.start()
 
     def close(self):
@@ -48,19 +47,17 @@ class SendData(threading.Thread):
         while self.running:
             try:
                 data = {'STATUS': 'POSITION', 'DATA': {'PLAYER': {'x': self.player.x, 'y': self.player.y}}}
-                # data = simplejson.dumps(data)
 
                 data = pickle.dumps(data)
 
                 self.server.send(data)
 
-                # sleep(0.0001)
             except socket.error:
                 self.running = False
 
 
 class ReceiveData(threading.Thread):
-    def __init__(self, server, enemy, ball):
+    def __init__(self, server, player, enemy, ball):
         super().__init__()
 
         self.running = True
@@ -69,6 +66,7 @@ class ReceiveData(threading.Thread):
 
         self.data = None
 
+        self.player = player
         self.enemy = enemy
         self.ball = ball
 
@@ -76,23 +74,26 @@ class ReceiveData(threading.Thread):
 
         while self.running:
             try:
-                data = self.server.recv(1024)
-                # self.data = simplejson.loads(data.decode('utf-8'))
+                data = self.server.recv(self.size)
 
                 try:
                     self.data = pickle.loads(data)
-
-                    print(self.data)
 
                     if 'STATUS' in self.data:
                         if self.data['STATUS'] == 'POSITION':
                             if 'DATA' in self.data:
                                 if "ENEMY" in self.data['DATA']:
-                                    self.enemy.x = self.data['DATA']["ENEMY"]['x']
-                                    self.enemy.y = self.data['DATA']["ENEMY"]['y']
+                                    self.enemy.x, self.enemy.y = self.data['DATA']["ENEMY"]['x'], self.data['DATA']["ENEMY"]['y']
                                 if "BALL" in self.data['DATA']:
-                                    self.ball.x = self.data['DATA']["BALL"]['x']
-                                    self.ball.y = self.data['DATA']["BALL"]['y']
+                                    self.ball.x, self.ball.y = self.data['DATA']["BALL"]['x'], self.data['DATA']["BALL"]['y']
+
+                        if self.data['STATUS'] == 'START':
+                            if 'DATA' in self.data:
+                                if self.data['DATA']['USER_NR'] == 0:
+                                    self.player.x = 16
+                                if self.data['DATA']['USER_NR'] == 1:
+                                    self.player.x = 640 - 16
+
                 except:
                     pass
 

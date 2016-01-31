@@ -27,7 +27,6 @@ class Player:
 class Enemy:
     def __init__(self):
         self.x, self.y = SCR_WID - 16, SCR_HEI / 2
-        self.speed = 8
         self.padWid, self.padHei = 8, 64
 
     def draw(self):
@@ -37,12 +36,10 @@ class Enemy:
 class Ball:
     def __init__(self):
         self.x, self.y = SCR_WID / 2, SCR_HEI / 2
-        self.speed_x = -5
-        self.speed_y = 5
         self.size = 8
 
     def draw(self):
-        pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y, 8, 8))
+        pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y, self.size, self.size))
 
 
 SCR_WID, SCR_HEI = 640, 480

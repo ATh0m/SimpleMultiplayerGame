@@ -1,9 +1,8 @@
 import threading
-import simplejson
 import pickle
 import socket
-from time import sleep
-from random import randint
+from . import Game
+import time
 
 
 class Room(threading.Thread):
@@ -16,20 +15,32 @@ class Room(threading.Thread):
         self.slots = 2
         self.free_slots = 2
 
+        self.ball = Game.Ball()
+
         self.running = True
 
     def run(self):
 
         while self.running:
 
-            data = {'STATUS': 'POSITION', 'DATA': {"ENEMY": {"x": randint(100, 400), 'y': 50}, "BALL": {'x': randint(100, 400), 'y': 100}}}
-            # data = simplejson.dumps(data)
-            data = pickle.dumps(data)
+            if len(self.users) == 2:
+                time.sleep(0.1)
 
-            for user in self.users:
+                self.ball.movement(self.users[0], self.users[1])
+
+                data0 = {'STATUS': 'POSITION',
+                         'DATA': {"ENEMY": {"x": self.users[0].x, 'y': self.users[0].y},
+                                  "BALL": {'x': self.ball.x, 'y': self.ball.y}}}
+                data0 = pickle.dumps(data0)
+
+                data1 = {'STATUS': 'POSITION',
+                         'DATA': {"ENEMY": {"x": self.users[1].x, 'y': self.users[1].y},
+                                  "BALL": {'x': self.ball.x, 'y': self.ball.y}}}
+                data1 = pickle.dumps(data1)
+
                 try:
-                    user.client.send(data)
-                    # sleep(0.0001)
+                    self.users[0].client.send(data1)
+                    self.users[1].client.send(data0)
                 except socket.error as error:
                     # self.running = False
                     pass
@@ -65,9 +76,7 @@ class RoomController(threading.Thread):
                     self.rooms.append(target_room)
                     target_room.start()
 
-                data = {"STATUS": "OK"}
-                # data = simplejson.dumps(data)
-
+                data = {"STATUS": "START", 'DATA': {'USER_NR': len(target_room.users), 'ROOM_NR': target_room.id}}
                 data = pickle.dumps(data)
 
                 user.client.send(data)
