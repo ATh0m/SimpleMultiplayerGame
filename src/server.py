@@ -1,5 +1,5 @@
-from src.server import Controller
+from src.server import Server
 
 if __name__ == '__main__':
-    c = Controller.Controller()
+    c = Server.ServerController()
     c.run()
