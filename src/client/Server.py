@@ -3,11 +3,12 @@ import socket
 import pickle
 from time import sleep
 from . import Game
+import sys
 
 
 class Server:
-    def __init__(self, player, enemy, ball):
-        self.host = 'localhost'
+    def __init__(self, player, enemy, ball, server_address, username):
+        self.host = server_address
         self.port = 1234
 
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -46,7 +47,10 @@ class SendData(threading.Thread):
 
         while self.running:
             try:
-                data = {'STATUS': 'POSITION', 'DATA': {'PLAYER': {'x': self.player.x, 'y': self.player.y}}}
+                data = {'STATUS': 'POSITION',
+                        'DATA': {'PLAYER': {'x': self.player.x,
+                                            'y': self.player.y,
+                                            'USERNAME': self.player.username}}}
 
                 data = pickle.dumps(data)
 
@@ -84,15 +88,20 @@ class ReceiveData(threading.Thread):
                             if 'DATA' in self.data:
                                 if "ENEMY" in self.data['DATA']:
                                     self.enemy.x, self.enemy.y = self.data['DATA']["ENEMY"]['x'], self.data['DATA']["ENEMY"]['y']
+                                    self.enemy.username = self.data['DATA']["ENEMY"]['USERNAME']
                                 if "BALL" in self.data['DATA']:
                                     self.ball.x, self.ball.y = self.data['DATA']["BALL"]['x'], self.data['DATA']["BALL"]['y']
 
-                        if self.data['STATUS'] == 'START':
+                        elif self.data['STATUS'] == 'START':
                             if 'DATA' in self.data:
                                 if self.data['DATA']['USER_NR'] == 0:
                                     self.player.x = 16
                                 if self.data['DATA']['USER_NR'] == 1:
                                     self.player.x = 640 - 16
+
+                        elif self.data['STATUS'] == 'CLOSE':
+                            print('ROOM HAS BEEN CLOSED')
+                            sys.exit(0)
 
                 except:
                     pass

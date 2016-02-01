@@ -24,17 +24,25 @@ class Room(threading.Thread):
         while self.running:
 
             if len(self.users) == 2:
+
+                for user in self.users:
+                    if not user.running:
+                        self.close()
+                        continue
+
                 time.sleep(0.1)
 
                 self.ball.movement(self.users[0], self.users[1])
 
                 data0 = {'STATUS': 'POSITION',
-                         'DATA': {"ENEMY": {"x": self.users[0].x, 'y': self.users[0].y},
+                         'DATA': {"ENEMY": {"x": self.users[0].x, 'y': self.users[0].y,
+                                            'USERNAME': self.users[0].username},
                                   "BALL": {'x': self.ball.x, 'y': self.ball.y}}}
                 data0 = pickle.dumps(data0)
 
                 data1 = {'STATUS': 'POSITION',
-                         'DATA': {"ENEMY": {"x": self.users[1].x, 'y': self.users[1].y},
+                         'DATA': {"ENEMY": {"x": self.users[1].x, 'y': self.users[1].y,
+                                            'USERNAME': self.users[1].username},
                                   "BALL": {'x': self.ball.x, 'y': self.ball.y}}}
                 data1 = pickle.dumps(data1)
 
@@ -44,6 +52,21 @@ class Room(threading.Thread):
                 except socket.error as error:
                     # self.running = False
                     pass
+
+    def close(self):
+        msg = {'STATUS': 'CLOSE'}
+        msg = pickle.dumps(msg)
+
+        for user in self.users:
+            try:
+                user.client.send(msg)
+            except:
+                pass
+            user.running = False
+            user.client.close()
+
+        self.running = False
+        self.join()
 
 
 class RoomController(threading.Thread):
@@ -67,8 +90,9 @@ class RoomController(threading.Thread):
                 target_room = None
 
                 for room in self.rooms:
-                    if room.free_slots > 0:
-                        target_room = room
+                    if room.running:
+                        if room.free_slots > 0:
+                            target_room = room
 
                 if target_room is None:
                     target_room = Room(self.last_room_id)

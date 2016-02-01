@@ -17,6 +17,8 @@ class Client(threading.Thread):
 
         self.x = 0
         self.y = 0
+        self.username = ''
+        self.score = 0
 
         self.running = True
 
@@ -35,6 +37,7 @@ class Client(threading.Thread):
                                 if 'PLAYER' in self.data['DATA']:
                                     self.x = self.data['DATA']['PLAYER']['x']
                                     self.y = self.data['DATA']['PLAYER']['y']
+                                    self.username = self.data['DATA']['PLAYER']['USERNAME']
                 except:
                     pass
 

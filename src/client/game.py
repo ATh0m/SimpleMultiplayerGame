@@ -3,10 +3,18 @@ from . import Server
 
 
 class Player:
-    def __init__(self):
-        self.x, self.y = 16, SCR_HEI / 2
+    def __init__(self, screen, width, height, username):
+        self.screen = screen
+        self.width = width
+        self.height = height
+
+        self.x, self.y = 16, self.height / 2
         self.speed = 8
         self.padWid, self.padHei = 8, 64
+
+        self.points = 0
+        self.username = username
+        self.username_font = pygame.font.Font("client/imagine_font.ttf", 30)
 
     def movement(self):
         keys = pygame.key.get_pressed()
@@ -17,63 +25,78 @@ class Player:
 
         if self.y <= 0:
             self.y = 0
-        elif self.y >= SCR_HEI - 64:
-            self.y = SCR_HEI - 64
+        elif self.y >= self.height - 64:
+            self.y = self.height - 64
 
     def draw(self):
-        pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y, self.padWid, self.padHei))
+        score_blit = self.username_font.render(str(self.username), 1, (0, 0, 0))
+        self.screen.blit(score_blit, (32, 16))
+
+        pygame.draw.rect(self.screen, (0, 0, 0), (self.x, self.y, self.padWid, self.padHei))
 
 
 class Enemy:
-    def __init__(self):
-        self.x, self.y = SCR_WID - 16, SCR_HEI / 2
+    def __init__(self, screen, width, height):
+        self.screen = screen
+        self.width = width
+        self.height = height
+
+        self.x, self.y = self.width - 16, self.height / 2
         self.padWid, self.padHei = 8, 64
 
+        self.username = ''
+        self.username_font = pygame.font.Font("client/imagine_font.ttf", 30)
+
     def draw(self):
-        pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y, self.padWid, self.padHei))
+        score_blit = self.username_font.render(str(self.username), 1, (255, 255, 255))
+        self.screen.blit(score_blit, (self.height + 92, 16))
+
+        pygame.draw.rect(self.screen, (0, 0, 0), (self.x, self.y, self.padWid, self.padHei))
 
 
 class Ball:
-    def __init__(self):
-        self.x, self.y = SCR_WID / 2, SCR_HEI / 2
+    def __init__(self, screen, width, height):
+        self.screen = screen
+        self.width = width
+        self.height = height
+
+        self.x, self.y = self.width / 2, self.height / 2
         self.size = 8
 
     def draw(self):
-        pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y, self.size, self.size))
+        pygame.draw.rect(self.screen, (0, 0, 0), (self.x, self.y, self.size, self.size))
 
 
-SCR_WID, SCR_HEI = 640, 480
-screen = pygame.display.set_mode((SCR_WID, SCR_HEI))
-pygame.display.set_caption("Pong")
-pygame.font.init()
-clock = pygame.time.Clock()
-FPS = 60
+class Game:
+    def __init__(self, username, server_address):
+        self.screen_width = 640
+        self.screen_height = 480
 
-ball = Ball()
-player = Player()
-enemy = Enemy()
+        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
+        pygame.display.set_caption("Pong")
+        pygame.font.init()
+        self.clock = pygame.time.Clock()
+        self.FPS = 60
 
-server = Server.Server(player, enemy, ball)
+        self.ball = Ball(self.screen, self.screen_width, self.screen_height)
+        self.player = Player(self.screen, self.screen_width, self.screen_height, username)
+        self.enemy = Enemy(self.screen, self.screen_width, self.screen_height)
 
-while True:
-    # process
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            print("Game exited by user")
+        self.server = Server.Server(self.player, self.enemy, self.ball, server_address, username)
 
-            server.close()
+        self.running = True
 
-            exit()
-            # process
-            # logic
-    player.movement()
-    # logic
-    # draw
-    screen.fill((0, 0, 0))
-    ball.draw()
-    player.draw()
-    enemy.draw()
-    # draw
-    # _______
-    pygame.display.flip()
-    clock.tick(FPS)
+    def start(self):
+        while self.running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    print("Game exited by user")
+                    self.server.close()
+                    exit()
+            self.player.movement()
+            self.screen.fill((255, 255, 255))
+            self.ball.draw()
+            self.player.draw()
+            self.enemy.draw()
+            pygame.display.flip()
+            self.clock.tick(self.FPS)

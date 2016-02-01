@@ -5,6 +5,7 @@ import sys
 import threading
 from . import Client
 from . import Room
+import shelve
 
 logging.basicConfig(filename='logs.log',
                     level=logging.DEBUG,
@@ -28,6 +29,11 @@ class Server(threading.Thread):
         self.last_client_id = 0
         self.clients = []
         self.new_clients = queue.Queue()
+
+        with shelve.open('database', 'c') as db:
+            if 'PLAYERS' not in db.keys():
+                db['PLAYERS'] = {}
+            self.database = db['PLAYERS']
 
     def open_socket(self):
         try:
@@ -109,6 +115,8 @@ class ServerController:
                 self.close()
             elif command.lower() == 'clients':
                 self.print_clients()
+            elif command.lower() == 'database':
+                self.print_database()
             else:
                 print("Not known command")
 
@@ -132,3 +140,6 @@ class ServerController:
 
     def print_clients(self):
         print(self.server.clients)
+
+    def print_database(self):
+        print(self.server.database)

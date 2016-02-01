@@ -18,7 +18,8 @@ class Ball:
             self.__init__()
         elif self.x >= 640 - self.size:
             self.__init__()
-            # self.speed_x = 3
+            self.speed_x *= -1
+            self.speed_y *= -1
 
         for n in range(-self.size, 64):
             if self.y == player1.y + n:
@@ -33,3 +34,8 @@ class Ball:
                     self.speed_x *= -1
                     break
             n += 1
+
+
+class Player:
+    def __init__(self):
+        pass
